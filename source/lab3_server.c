@@ -502,7 +502,6 @@ void sendRadioPacket(uint8_t board, uint8_t messageCode) {
 	
 	uint8_t attemptCount = 0;
 	do {
-		LED_ToggleLed(4);
 		ackReceived = FALSE;
    		sendViaWBN(&packet);
 		attemptCount = attemptCount + 1;
