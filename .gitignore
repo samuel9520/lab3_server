@@ -117,3 +117,4 @@ local.properties
 
 # Custom
 /Debug
+/.vscode

@@ -104,6 +104,7 @@ static bool_t bTxDone;
 static bool_t bRxDone;
 
 static uint8_t packetCount = 0;
+static volatile ackReceived = TRUE;
 
 #if gSmacUseSecurity_c
 
@@ -498,7 +499,15 @@ void sendRadioPacket(uint8_t board, uint8_t messageCode) {
 		packetCount = packetCount + 1;
 	}
 	
-	sendViaWBN(packet);
+	unit8_t attemptCount = 0;
+	do {
+		ackReceived = FALSE;
+   		sendViaWBN(packet);
+		attemptCount = attemptCount + 1;
+		//Sets delay in miliseconds.
+		OSA_TimeDelay(1000);
+	} while(!ackReceived && attemptCount <= 2);
+
 }
 
 
