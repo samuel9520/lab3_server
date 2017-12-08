@@ -331,15 +331,16 @@ void main_task(uint32_t param)
 	SLIP_Init();
 
 	LED_RED_INIT(1);
-	LED_RED_ON();
+	//LED_RED_ON();
 	uint8_t led_status = 1;
 
 	LED_GREEN_INIT(1);
-	LED_GREEN_ON();
+	//LED_GREEN_ON();
 	uint8_t radio_led1_status = 1;
 	uint8_t radio_led2_status = 1;
 	uint8_t radio_led3_status = 1;
 
+	LED_BLUE_INIT(1);
 
 	/* sendRadioPacket(1);
 	sendRadioPacket(2);
@@ -348,8 +349,10 @@ void main_task(uint32_t param)
 	radio_led2_status = 0;
 	radio_led3_status = 0; 
 
+
 	while (1)
 	{
+		LED_GREEN_TOGGLE();
 
 		rlen = SLIP_readPacket(1500,rxbuff);
 
@@ -358,6 +361,7 @@ void main_task(uint32_t param)
 		// tcp port starts
 
 		if (rxbuff[TCP_FLAGS_P] & TCP_FLAGS_SYN_V) {
+			LED_BLUE_ON();
 			make_tcp_synack_from_syn(rxbuff);
 			continue;
 		}
@@ -435,6 +439,7 @@ void main_task(uint32_t param)
 
 			rlen=print_webpage(rxbuff,led_status,radio_led1_status, radio_led2_status, radio_led3_status);
 			SENDTCP:
+			LED_BLUE_ON();
 			make_tcp_ack_from_any(rxbuff); // send ack for http get
 			make_tcp_ack_with_data(rxbuff,rlen); // send data
 			continue;
@@ -486,6 +491,8 @@ void InitApp()
 
 
 void sendRadioPacket(uint8_t board, uint8_t messageCode) {
+	LED_RED_ON();
+
 	Packet packet;
 	
 	packet.sourceID = 0;
