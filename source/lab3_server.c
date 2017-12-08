@@ -43,6 +43,7 @@
 #include "SLIP.h"
 #include "TCP_IP.h"
 #include "WBN_protocol.h"
+#include <stdint.h>
 
 
 
@@ -487,11 +488,11 @@ void InitApp()
 void sendRadioPacket(uint8_t board, uint8_t messageCode) {
 	Packet packet;
 	
-	packet->sourceID = 0;
-	packet->destinationID = board;
-	packet->packetID = packetCount;
-	packet->timeToLive = 5;
-	packet->payload = messageCode;
+	packet.sourceID = 0;
+	packet.destinationID = board;
+	packet.packetID = packetCount;
+	packet.timeToLive = 5;
+	packet.payload = messageCode;
 	
 	if(packetCount == 127) {
 		packetCount = 0;
@@ -499,12 +500,13 @@ void sendRadioPacket(uint8_t board, uint8_t messageCode) {
 		packetCount = packetCount + 1;
 	}
 	
-	unit8_t attemptCount = 0;
+	uint8_t attemptCount = 0;
 	do {
+		LED_ToggleLed(4);
 		ackReceived = FALSE;
-   		sendViaWBN(packet);
+   		sendViaWBN(&packet);
 		attemptCount = attemptCount + 1;
-		//Sets delay in miliseconds.
+		//Sets delay in milliseconds.
 		OSA_TimeDelay(1000);
 	} while(!ackReceived && attemptCount <= 2);
 
