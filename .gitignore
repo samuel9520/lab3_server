@@ -117,5 +117,3 @@ local.properties
 
 # Custom
 /Debug
-.cproject
-*.launch
