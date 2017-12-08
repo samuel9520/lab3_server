@@ -35,13 +35,16 @@
  * Include
  *************************************************************************************
  ************************************************************************************/
-
+ 
 #include <lab3_server.h>
 #include "SMAC_Config.h"
 
 #include "network.h"
 #include "SLIP.h"
 #include "TCP_IP.h"
+#include "WBN_protocol.h"
+
+
 
 /************************************************************************************
  *************************************************************************************
@@ -100,6 +103,7 @@ static bool_t bACKFailed;
 static bool_t bTxDone;
 static bool_t bRxDone;
 
+static uint8_t packetCount = 0;
 
 #if gSmacUseSecurity_c
 
@@ -140,7 +144,7 @@ static void HandleEvents(int32_t evSignals);
 
 #if gSmacUseSecurity_c
 
-void sendRadioPacket(uint8_t led);
+void sendRadioPacket(uint8_t board, uint8_t messageCode);
 int8_t analyse_get_url(char *str);
 uint16_t moved_perm(uint8_t *buf);
 uint16_t print_webpage(uint8_t *buf,uint8_t on_off, uint8_t radio1_on_off, uint8_t radio2_on_off,uint8_t radio3_on_off);
@@ -335,12 +339,12 @@ void main_task(uint32_t param)
 	uint8_t radio_led3_status = 1;
 
 
-	sendRadioPacket(1);
+	/* sendRadioPacket(1);
 	sendRadioPacket(2);
-	sendRadioPacket(3);
+	sendRadioPacket(3);*/
 	radio_led1_status = 0;
 	radio_led2_status = 0;
-	radio_led3_status = 0;
+	radio_led3_status = 0; 
 
 	while (1)
 	{
@@ -409,19 +413,16 @@ void main_task(uint32_t param)
 				led_status = 0;
 			}
 			if (cmd==2){
-
-				sendRadioPacket(1);
-				radio_led1_status = radio_led1_status? 0 : 1;
+				radio_led1_status = radio_led1_status? 0 : 1; // toggle
+				sendRadioPacket(1, radio_led1_status);
 			}
 			if (cmd==3){
-
-				sendRadioPacket(2);
 				radio_led2_status = radio_led2_status? 0 : 1;
+				sendRadioPacket(1, radio_led2_status);
 			}
 			if (cmd==4){
-
-				sendRadioPacket(3);
 				radio_led3_status = radio_led3_status? 0 : 1;
+				sendRadioPacket(1, radio_led3_status);
 			}
 
 			if (cmd==-3){
@@ -464,6 +465,8 @@ void InitApp()
 
 	SMACFillHeader(&(gAppTxPacket->smacHeader), shortDestinationID);                   //Destination Address is set in InitProject;
 
+	initWBN(gAppTxPacket);
+	
 #ifdef gPHY_802_15_4g_d
 	(void)MLMESetPhyMode(gDefaultMode1_c);
 #endif
@@ -480,47 +483,22 @@ void InitApp()
  ************************************************************************/
 
 
-void sendRadioPacket(uint8_t led) {
-	smacErrors_t err = gErrorNoError_c;
-
-	static uint8_t txDataBuffer1[4] = {0x6c,0x65,0x64, 0x31};
-	static uint8_t txDataBuffer2[4] = {0x6c,0x65,0x64, 0x32};
-	static uint8_t txDataBuffer3[4] = {0x6c,0x65,0x64, 0x33};
-
-	static uint8_t* pPacketPdu;
-
-	pPacketPdu = gAppTxPacket->smacPdu.smacPdu;
-
-	FLib_MemSet(gAppTxPacket->smacPdu.smacPdu, 0, gMaxSmacSDULength_c);
-
-	if(led == 1) {
-		pPacketPdu[0]=txDataBuffer1[0];
-		pPacketPdu[1]=txDataBuffer1[1];
-		pPacketPdu[2]=txDataBuffer1[2];
-		pPacketPdu[3]=txDataBuffer1[3];
-
-	} else if (led == 2){
-		pPacketPdu[0]=txDataBuffer2[0];
-		pPacketPdu[1]=txDataBuffer2[1];
-		pPacketPdu[2]=txDataBuffer2[2];
-		pPacketPdu[3]=txDataBuffer2[3];
-
-	} else if (led == 3){
-		pPacketPdu[0]=txDataBuffer3[0];
-		pPacketPdu[1]=txDataBuffer3[1];
-		pPacketPdu[2]=txDataBuffer3[2];
-		pPacketPdu[3]=txDataBuffer3[3];
-
+void sendRadioPacket(uint8_t board, uint8_t messageCode) {
+	Packet packet;
+	
+	packet->sourceID = 0;
+	packet->destinationID = board;
+	packet->packetID = packetCount;
+	packet->timeToLive = 5;
+	packet->payload = messageCode;
+	
+	if(packetCount == 127) {
+		packetCount = 0;
 	} else {
-		//something went wrong
+		packetCount = packetCount + 1;
 	}
-
-
-	gAppTxPacket->u8DataLength = 4;
-
-	err = MCPSDataRequest(gAppTxPacket);
-
-	if(err == gErrorNoError_c); // do something
+	
+	sendViaWBN(packet);
 }
 
 
